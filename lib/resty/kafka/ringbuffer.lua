@@ -59,11 +59,11 @@ function _M.pop(self)
 
     self.start = (start + 3) % self.size
 
-    local key, topic, message = queue[start], queue[start + 1], queue[start + 2]
+    local topic, key, message = queue[start], queue[start + 1], queue[start + 2]
 
     queue[start], queue[start + 1], queue[start + 2] = ngx_null, ngx_null, ngx_null
 
-    return key, topic, message
+    return topic, key, message
 end
 
 
