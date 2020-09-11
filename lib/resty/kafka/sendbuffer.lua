@@ -11,6 +11,14 @@ if not ok then
     new_tab = function (narr, nrec) return {} end
 end
 
+local function array_buf_len(tb)
+    local len = 0
+    for _, k in ipairs(tb) do
+        len = len + ((type(k) == "table") and array_buf_len(k) or #k)
+    end
+    return len
+end
+
 local MAX_REUSE = 10000
 
 
@@ -60,7 +68,11 @@ function _M.add(self, topic, partition_id, key, msg)
     queue[index + 2] = msg
 
     buffer.index = index + 2
-    buffer.size = buffer.size + #msg + (key and #key or 0)
+    if type(msg) ~= "table" then
+        buffer.size = buffer.size + #msg + (key and #key or 0)
+    else
+        buffer.size = buffer.size + array_buf_len(msg) + (key and #key or 0)
+    end
 
     if (buffer.size >= self.batch_size) or (buffer.index >= self.batch_num) then
         return true

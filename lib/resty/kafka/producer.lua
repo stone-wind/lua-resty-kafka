@@ -363,6 +363,7 @@ end
 
 
 -- offset is cdata (LL in luajit)
+-- message 支持 table 形式, 可以通过元表在错误处理获得更多信息
 function _M.send(self, topic, key, message)
     if self.async then
         local ringbuffer = self.ringbuffer

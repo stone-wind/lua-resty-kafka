@@ -10,7 +10,8 @@ local concat = table.concat
 local rshift = bit.rshift
 local band = bit.band
 local char = string.char
-local crc32 = ngx.crc32_long
+-- local crc32 = ngx.crc32_long
+local crc32 = require "resty.kafka.crc32"
 local tonumber = tonumber
 
 
@@ -147,11 +148,22 @@ function _M.bytes(self, str)
     self.len = self.len + 4 + str_len
 end
 
+local function array_buf_len(tb)
+    local len = 0
+    for _, k in ipairs(tb) do
+        len = len + ((type(k) == "table") and array_buf_len(k) or #k)
+    end
+    return len
+end
 
 local function message_package(key, msg, message_version)
     local key = key or ""
     local key_len = #key
     local len = #msg
+
+    if type(msg) == "table" then
+        len = array_buf_len(msg)
+    end
 
     local req
     local head_len
@@ -183,8 +195,8 @@ local function message_package(key, msg, message_version)
         head_len = 14
     end
 
-    local str = concat(req)
-    return crc32(str), str, key_len + len + head_len
+    -- local str = concat(req)
+    return crc32(req), req, key_len + len + head_len
 end
 
 
