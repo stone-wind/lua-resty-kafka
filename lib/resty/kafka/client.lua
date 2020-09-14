@@ -134,7 +134,7 @@ local function _fetch_metadata(self, new_topic)
 
     for i = 1, #broker_list do
         local host, port = broker_list[i].host, broker_list[i].port
-        local bk = broker:new(host, port, sc)
+        local bk = broker:new(host, port, sc, self.username, self.password)
 
         local resp, err = bk:send_receive(req)
         if not resp then
@@ -182,6 +182,8 @@ function _M.new(self, broker_list, client_config)
         broker_list = broker_list,
         topic_partitions = {},
         brokers = {},
+        username = opts.username,
+        password = opts.password,
         client_id = "worker" .. pid(),
         socket_config = socket_config,
     }, mt)

@@ -154,7 +154,8 @@ local function _send(self, broker_conf, topic_partitions)
     local sendbuffer = self.sendbuffer
     local resp, retryable = nil, true
 
-    local bk, err = broker:new(broker_conf.host, broker_conf.port, self.socket_config)
+    local bk, err = broker:new(broker_conf.host, broker_conf.port, 
+                            self.socket_config, self.username, self.password)
     if bk then
         local req = produce_encode(self, topic_partitions)
 
@@ -367,6 +368,8 @@ function _M.new(self, broker_list, producer_config, cluster_name)
         socket_config = cli.socket_config,
         _timer_flushing_buffer = false,
         sema = semaphore.new(),
+        username = opts.username,
+        password = opts.password,
         ringbuffer = ringbuffer:new(opts.batch_num or 200, opts.max_buffering or 50000),   -- 200, 50K
         sendbuffer = sendbuffer:new(opts.batch_num or 200, opts.batch_size or 1048576)
                         -- default: 1K, 1M

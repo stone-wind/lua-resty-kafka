@@ -67,6 +67,34 @@ local function str_int64(int)
                 tonumber(band(int, 0xff)))
 end
 
+-- http://kafka.apache.org/10/protocol.html#sasl_handshake
+-- for sasl/plain only api_version 1
+function _M.pack_saslhandshake(correlation_id, client_id, mechanism)
+    return {
+        str_int32(12 + #client_id + #mechanism),   -- request size: int32
+        str_int16(17),
+        str_int16(1), -- api_version 1
+        str_int32(correlation_id),
+        str_int16(#client_id),
+        client_id,
+        str_int16(#mechanism),
+        mechanism
+    }
+end
+
+-- SaslAuthenticate request
+function _M.pack_saslauth(correlation_id, client_id, username, password)
+    return {
+        str_int32(16 + #client_id + #username + #password),   -- request size: int32
+        str_int16(36),
+        str_int16(1),
+        str_int32(correlation_id),
+        str_int16(#client_id),
+        client_id,
+        str_int32(2 + #username + #password),
+        "\x00" .. username .. "\x00" .. password
+    }
+end
 
 function _M.new(self, apikey, correlation_id, client_id, api_version)
     local c_len = #client_id
