@@ -8,6 +8,7 @@ local client = require "resty.kafka.client"
 local Errors = require "resty.kafka.errors"
 local sendbuffer = require "resty.kafka.sendbuffer"
 local ringbuffer = require "resty.kafka.ringbuffer"
+local semaphore = require "ngx.semaphore"
 
 
 local setmetatable = setmetatable
@@ -240,6 +241,9 @@ local function _flush(premature, self)
 
     local ringbuffer = self.ringbuffer
     local sendbuffer = self.sendbuffer
+    local start = ngx.now()
+
+::continue::
     while true do
         local topic, key, msg = ringbuffer:pop()
         if not topic then
@@ -278,18 +282,38 @@ local function _flush(premature, self)
         end
     end
 
+    -- 每30秒, 允许重新创建 timer
+    -- _batch_send中一发一收带有一定时延, 等同于批量收集间隔
+    if ngx.now() <= start + 30 then
+        if ringbuffer:left_num() > 0 then
+            goto continue
+        else
+            -- sema wait防止频繁调用timer
+            self.sema:wait(30)
+            -- 快速尝试
+            if ringbuffer:left_num() > 0 then
+                goto continue
+            end
+        end
+    end
+
     _flush_unlock(self)
 
     -- reset _timer_flushing_buffer after flushing complete
     self._timer_flushing_buffer = false
 
-    if ringbuffer:need_send() then
-        _flush_buffer(self)
-
-    elseif is_exiting() and ringbuffer:left_num() > 0 then
-        -- still can create 0 timer even exiting
+    -- 再次尝试, 立刻发布
+    if ringbuffer:left_num() > 0 then
         _flush_buffer(self)
     end
+
+    -- if ringbuffer:need_send() then
+    --     _flush_buffer(self)
+
+    -- elseif is_exiting() and ringbuffer:left_num() > 0 then
+    --     -- still can create 0 timer even exiting
+    --     _flush_buffer(self)
+    -- end
 
     return true
 end
@@ -342,6 +366,7 @@ function _M.new(self, broker_list, producer_config, cluster_name)
         async = async,
         socket_config = cli.socket_config,
         _timer_flushing_buffer = false,
+        sema = semaphore.new(),
         ringbuffer = ringbuffer:new(opts.batch_num or 200, opts.max_buffering or 50000),   -- 200, 50K
         sendbuffer = sendbuffer:new(opts.batch_num or 200, opts.batch_size or 1048576)
                         -- default: 1K, 1M
@@ -373,7 +398,10 @@ function _M.send(self, topic, key, message)
             return nil, err
         end
 
-        if not self.flushing and (ringbuffer:need_send() or is_exiting()) then
+        -- 为了实时性, 取消 need_send 与 is_exiting 检查
+        if self.flushing then
+            self.sema:post(1)
+        else
             _flush_buffer(self)
         end
 
