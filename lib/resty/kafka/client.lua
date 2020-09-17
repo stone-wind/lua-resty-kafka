@@ -1,5 +1,5 @@
 -- Copyright (C) Dejiang Zhu(doujiang24)
-
+-- Copyright (C) Nie Wenfeng(stone)
 
 local broker = require "resty.kafka.broker"
 local request = require "resty.kafka.request"

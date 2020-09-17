@@ -1,4 +1,5 @@
 -- Copyright (C) Dejiang Zhu(doujiang24)
+-- Copyright (C) Nie Wenfeng(stone)
 
 local kafka_request = require "resty.kafka.request"
 local response = require "resty.kafka.response"
@@ -122,7 +123,6 @@ function _M.send_receive(self, request)
     local cnt, err = sock:getreusedtimes()
     if 0 == cnt then
         if self.config.ssl then
-            -- TODO: add reused_session for better performance of short-lived connections
             local _, err = sock:sslhandshake(false, self.host, self.config.ssl_verify)
             if err then
                 return nil, "failed to do SSL handshake with " ..

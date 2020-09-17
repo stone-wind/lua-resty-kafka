@@ -1,7 +1,7 @@
 -- Copyright (C) Dejiang Zhu(doujiang24)
+-- Copyright (C) Nie Wenfeng(stone)
+
 local ffi = require "ffi"
-
-
 local bit = require "bit"
 
 

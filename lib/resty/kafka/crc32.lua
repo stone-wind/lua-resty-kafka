@@ -1,3 +1,5 @@
+-- Copyright (C) Nie Wenfeng(stone)
+
 local ffi = require("ffi")
 local bit = require("bit")
 

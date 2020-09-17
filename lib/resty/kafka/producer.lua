@@ -1,5 +1,5 @@
 -- Copyright (C) Dejiang Zhu(doujiang24)
-
+-- Copyright (C) Nie Wenfeng(stone)
 
 local response = require "resty.kafka.response"
 local request = require "resty.kafka.request"
